@@ -1,0 +1,39 @@
+﻿<Window x:Class="Get_TLE.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Get_TLE"
+        mc:Ignorable="d"
+        Title="Get_TLE" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock Text="Список спутников (NORAD_ID ↔ Название)" FontSize="16" FontWeight="Bold"/>
+
+        <!-- Таблица пар -->
+        <DataGrid Grid.Row="1"
+              ItemsSource="{Binding Mappings}"
+              SelectedItem="{Binding SelectedMapping}"
+              AutoGenerateColumns="False"
+              Margin="0,10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="NORAD ID" Binding="{Binding NoradId}" Width="*"/>
+                <DataGridTextColumn Header="Название" Binding="{Binding DisplayName}" Width="2*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" >
+            <Button Content="Настройки" Width="80" Margin="0,0,10,0" Click="OpenCredentials_Click"/>
+            <Button Content="Добавить" Command="{Binding AddCommand}" Width="80"/>
+            <Button Content="Удалить" Command="{Binding RemoveCommand}" Width="80"/>
+            <Button Content="Скачать TLE" Command="{Binding FetchTleCommand}" Width="100"/>
+        </StackPanel>
+    </Grid>
+</Window>
