@@ -67,21 +67,26 @@ namespace Get_TLE.ViewModel
             Properties.Settings.Default.Save();
         }
 
+        private readonly string _mappingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "satellite_mappings.json");
+
         private void LoadMappings()
         {
-            var json = Properties.Settings.Default.MappingsJson;
-            if (!string.IsNullOrWhiteSpace(json))
+            if (File.Exists(_mappingsPath))
             {
-                var list = JsonSerializer.Deserialize<SatelliteMapping[]>(json);
-                foreach (var m in list) Mappings.Add(m);
+                var json = File.ReadAllText(_mappingsPath);
+                var list = JsonSerializer.Deserialize<List<SatelliteMapping>>(json);
+                if (list != null)
+                {
+                    Mappings.Clear();
+                    foreach (var m in list) Mappings.Add(m);
+                }
             }
         }
 
         private void SaveMappings()
         {
-            var json = JsonSerializer.Serialize(Mappings.ToArray());
-            Properties.Settings.Default.MappingsJson = json;
-            Properties.Settings.Default.Save();
+            var json = JsonSerializer.Serialize(Mappings.ToList(), new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_mappingsPath, json);
         }
 
         private void AddMapping()
