@@ -146,21 +146,6 @@ namespace Get_TLE.ViewModel
                     // 5) Загрузка сырых TLE
                     string tleRaw = await client.GetStringAsync(tleUrl);
 
-                    // 6) Обработка и вставка названий
-                    var lines = tleRaw.Split('\n');
-                    var sb = new StringBuilder();
-                    foreach (var line in lines)
-                    {
-                        if (line.StartsWith("1 ")
-                            && int.TryParse(line.Substring(2, 5), out int id))
-                        {
-                            var map = Mappings.FirstOrDefault(m => m.NoradId == id);
-                            if (map != null)
-                                sb.AppendLine(map.DisplayName);
-                        }
-                        sb.AppendLine(line);
-                    }
-
                     // 7) Сохранение в выбранную папку
                     // Папка и шаблон имени из настроек, с проверкой
                     var folder = string.IsNullOrWhiteSpace(Properties.Settings.Default.SaveFolderPath)
@@ -171,6 +156,26 @@ namespace Get_TLE.ViewModel
                     var template = Properties.Settings.Default.DefaultFileName;
                     var fileName = template.Replace("{yyyyMMdd_HHmmss}", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
                     var fullPath = Path.Combine(folder, fileName);
+
+                    // Обработка TLE-блоков без лишних строк, с поддержкой всех строк
+                    var lines = tleRaw.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    var sb = new StringBuilder();
+
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        var line = lines[i];
+
+                        if (line.StartsWith("1 ") && int.TryParse(line.Substring(2, 5), out int id))
+                        {
+                            var map = Mappings.FirstOrDefault(m => m.NoradId == id);
+                            if (map != null)
+                                sb.Append(map.DisplayName + "\r\n");
+                        }
+
+                        sb.Append(line + "\r\n");
+                    }
+
+
                     File.WriteAllText(fullPath, sb.ToString());
 
                     System.Windows.MessageBox.Show($"TLE сохранён:\n{fileName}", "Успех",
