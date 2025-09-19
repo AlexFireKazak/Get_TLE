@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Get_TLE.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -39,10 +40,47 @@ namespace Get_TLE.Views
                 MessageBox.Show("Введите название спутника.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            try
+            {
+                var mapping = new SatelliteMapping
+                {
+                    NoradId = int.Parse(NoradTextBox.Text.Trim()),
+                    DisplayName = NameTextBox.Text.Trim(),
+                    IsFake = FakeCheckBox.IsChecked == true
+                };
 
-            NoradId = id;
-            SatelliteName = NameTextBox.Text.Trim();
-            DialogResult = true;
+                if (mapping.IsFake)
+                {
+                    if (!int.TryParse(FakeIdTextBox.Text, out int FakeId))
+                    {
+                        MessageBox.Show("NORAD ID должен быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    if (string.IsNullOrWhiteSpace(FakeNameTextBox.Text))
+                    {
+                        MessageBox.Show("Введите название спутника.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    mapping.FakeId = int.Parse(FakeIdTextBox.Text.Trim());
+                    mapping.FakeName = FakeNameTextBox.Text.Trim();
+                }
+
+                Tag = mapping;
+                DialogResult = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void FakeCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            FakePanel.Visibility = Visibility.Visible;
+        }
+
+        private void FakeCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            FakePanel.Visibility = Visibility.Collapsed;
         }
     }
 }

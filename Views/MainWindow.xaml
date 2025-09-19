@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:Get_TLE"
         mc:Ignorable="d"
         Title="Get_TLE" Height="450" Width="800">
+    
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -25,6 +26,8 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="NORAD ID" Binding="{Binding NoradId}" Width="*"/>
                 <DataGridTextColumn Header="Название" Binding="{Binding DisplayName}" Width="2*"/>
+                <DataGridTextColumn Header="FakeID" Binding="{Binding FakeId}" Width="2*"/>
+                <DataGridTextColumn Header="Название" Binding="{Binding FakeName}" Width="2*"/>
             </DataGrid.Columns>
         </DataGrid>
 

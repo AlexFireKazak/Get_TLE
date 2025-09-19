@@ -5,9 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Get_TLE.Views"
         mc:Ignorable="d"
-        Title="Новая запись" Height="150" Width="300" WindowStartupLocation="CenterOwner">
+        Title="Новая запись" Height="300" Width="300" WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -17,16 +20,30 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
+        <!-- NORAD ID -->
         <TextBlock Text="NORAD ID:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
         <TextBox x:Name="NoradTextBox" Grid.Row="0" Grid.Column="1" Margin="5"/>
 
+        <!-- Название -->
         <TextBlock Text="Название:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
         <TextBox x:Name="NameTextBox" Grid.Row="1" Grid.Column="1" Margin="5"/>
 
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
-                HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="OK" Width="60" IsDefault="True" Click="Ok_Click"/>
-            <Button Content="Отмена" Width="60" IsCancel="True"/>
+        <!-- FakeID -->
+        <CheckBox x:Name="FakeCheckBox" Content="FakeID" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="5" Checked="FakeCheckBox_Checked" Unchecked="FakeCheckBox_Unchecked"/>
+
+        <!-- Панель FakeID -->
+        <StackPanel x:Name="FakePanel" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Visibility="Collapsed" Margin="5">
+            <TextBlock Text="Новый ID:"/>
+            <TextBox x:Name="FakeIdTextBox" Margin="0,0,0,5"/>
+            <TextBlock Text="Новое имя:"/>
+            <TextBox x:Name="FakeNameTextBox"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="OK" Width="80" IsDefault="True" Click="Ok_Click"/>
+            <Button Content="Отмена" Width="80" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>
