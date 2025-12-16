@@ -120,9 +120,9 @@ namespace Get_TLE.ViewModel
                     // Авторизация на Space-Track
                     var loginData = new FormUrlEncodedContent(new[]
                     {
-                        new KeyValuePair<string, string>("identity", Properties.Settings.Default.SpacetrackLogin),
-                        new KeyValuePair<string, string>("password", Properties.Settings.Default.SpacetrackPassword)
-                    });
+                new KeyValuePair<string, string>("identity", Properties.Settings.Default.SpacetrackLogin),
+                new KeyValuePair<string, string>("password", Properties.Settings.Default.SpacetrackPassword)
+            });
 
                     var response = await client.PostAsync("https://www.space-track.org/ajaxauth/login", loginData);
 
@@ -135,7 +135,9 @@ namespace Get_TLE.ViewModel
                     // Формируем список уникальных NORAD ID для запроса
                     var uniqueNoradIds = Mappings.Select(m => m.NoradId).Distinct();
                     var noradIds = string.Join(",", uniqueNoradIds);
-                    var tleUrl = $"https://www.space-track.org/basicspacedata/query/class/tle_latest/NORAD_CAT_ID/{noradIds}/format/tle";
+
+                    // Добавляем сортировку по дате в убывающем порядке, чтобы получить самые свежие TLE
+                    var tleUrl = $"https://www.space-track.org/basicspacedata/query/class/tle_latest/NORAD_CAT_ID/{noradIds}/ORDINAL/1/orderby/TLE_LINE1%20ASC/format/tle";
 
                     var tleResponse = await client.GetAsync(tleUrl);
                     tleResponse.EnsureSuccessStatusCode();
@@ -151,10 +153,34 @@ namespace Get_TLE.ViewModel
                     var lines = tleRaw.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                     var sb = new StringBuilder();
 
-                    // Создаем словарь для быстрого доступа к TLE по NORAD ID
+                    // Создаем словарь для хранения самых свежих TLE по NORAD ID
                     var tleDict = new Dictionary<int, (string line1, string line2)>();
 
-                    // Обрабатываем TLE построчно и заполняем словарь
+                    // Функция для извлечения эпохи из TLE
+                    DateTime GetEpochFromTle(string line1)
+                    {
+                        try
+                        {
+                            // Эпоха находится в позициях 18-32 первой строки TLE
+                            // Формат: YYDDD.DDDDDDDD (год и день года с дробной частью)
+                            var epochStr = line1.Substring(18, 14).Trim();
+                            var year = int.Parse(epochStr.Substring(0, 2));
+                            var dayOfYear = double.Parse(epochStr.Substring(2), CultureInfo.InvariantCulture);
+
+                            // Преобразуем двухзначный год в четырехзначный (1957-2056)
+                            year = year < 57 ? year + 2000 : year + 1900;
+
+                            // Создаем дату на 1 января и добавляем дни (-1 потому что 1 января = день 1)
+                            var epoch = new DateTime(year, 1, 1).AddDays(dayOfYear - 1);
+                            return epoch;
+                        }
+                        catch
+                        {
+                            return DateTime.MinValue;
+                        }
+                    }
+
+                    // Обрабатываем TLE построчно и выбираем самые свежие
                     for (int i = 0; i < lines.Length - 1; i++)
                     {
                         var line1 = lines[i];
@@ -164,7 +190,14 @@ namespace Get_TLE.ViewModel
                         {
                             if (int.TryParse(line1.Substring(2, 5), out int id))
                             {
-                                tleDict[id] = (line1, line2);
+                                var currentEpoch = GetEpochFromTle(line1);
+
+                                // Если TLE для этого спутника еще нет в словаре, или текущее TLE более свежее
+                                if (!tleDict.TryGetValue(id, out var existingTle) ||
+                                    GetEpochFromTle(existingTle.line1) < currentEpoch)
+                                {
+                                    tleDict[id] = (line1, line2);
+                                }
                             }
                             i++; // Пропускаем вторую строку
                         }
