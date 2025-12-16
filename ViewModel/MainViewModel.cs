@@ -35,6 +35,7 @@ namespace Get_TLE.ViewModel
         public ICommand FetchTleCommand { get; }
 
         private readonly string _mappingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "satellite_mappings.json");
+        private DateTime _lastFetchTime = DateTime.MinValue;
 
         public MainViewModel()
         {
@@ -105,11 +106,37 @@ namespace Get_TLE.ViewModel
             }
         }
 
+        private bool CheckRequestFrequency()
+        {
+            var timeSinceLastFetch = DateTime.Now - _lastFetchTime;
+
+            if (timeSinceLastFetch.TotalHours < 1)
+            {
+                var result = MessageBox.Show(
+                    $"С момента последнего запроса прошло {timeSinceLastFetch.TotalMinutes:F0} минут.\n\n" +
+                    "Space-Track рекомендует делать запросы не чаще 1 раза в час.\n\n" +
+                    "Вы уверены, что хотите продолжить?",
+                    "Частый запрос",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                return result == MessageBoxResult.Yes;
+            }
+
+            return true;
+        }
+
         public async Task FetchAndProcessTle()
         {
             if (Mappings.Count == 0)
             {
                 MessageBox.Show("Нет добавленных спутников для получения TLE.");
+                return;
+            }
+
+            // Проверка частоты запросов
+            if (!CheckRequestFrequency())
+            {
                 return;
             }
 
@@ -120,9 +147,9 @@ namespace Get_TLE.ViewModel
                     // Авторизация на Space-Track
                     var loginData = new FormUrlEncodedContent(new[]
                     {
-                new KeyValuePair<string, string>("identity", Properties.Settings.Default.SpacetrackLogin),
-                new KeyValuePair<string, string>("password", Properties.Settings.Default.SpacetrackPassword)
-            });
+                        new KeyValuePair<string, string>("identity", Properties.Settings.Default.SpacetrackLogin),
+                        new KeyValuePair<string, string>("password", Properties.Settings.Default.SpacetrackPassword)
+                    });
 
                     var response = await client.PostAsync("https://www.space-track.org/ajaxauth/login", loginData);
 
@@ -136,11 +163,16 @@ namespace Get_TLE.ViewModel
                     var uniqueNoradIds = Mappings.Select(m => m.NoradId).Distinct();
                     var noradIds = string.Join(",", uniqueNoradIds);
 
-                    // Добавляем сортировку по дате в убывающем порядке, чтобы получить самые свежие TLE
-                    var tleUrl = $"https://www.space-track.org/basicspacedata/query/class/tle_latest/NORAD_CAT_ID/{noradIds}/ORDINAL/1/orderby/TLE_LINE1%20ASC/format/tle";
+                    // НОВЫЙ URL: Используем gp вместо tle_latest
+                    var tleUrl = $"https://www.space-track.org/basicspacedata/query/class/gp/NORAD_CAT_ID/{noradIds}/orderby/NORAD_CAT_ID%20ASC/format/tle";
 
                     var tleResponse = await client.GetAsync(tleUrl);
-                    tleResponse.EnsureSuccessStatusCode();
+
+                    if (!tleResponse.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show($"Ошибка получения TLE данных: {tleResponse.StatusCode}");
+                        return;
+                    }
 
                     var tleRaw = await tleResponse.Content.ReadAsStringAsync();
 
@@ -241,9 +273,17 @@ namespace Get_TLE.ViewModel
 
                     File.WriteAllText(fullPath, sb.ToString());
 
+                    // Обновляем время последнего запроса только при успешном завершении
+                    _lastFetchTime = DateTime.Now;
+
                     MessageBox.Show($"TLE данные успешно сохранены в файл:\n{fullPath}", "Успех",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
+            }
+            catch (HttpRequestException httpEx)
+            {
+                MessageBox.Show($"Ошибка сети при получении TLE: {httpEx.Message}", "Ошибка сети",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
